@@ -1,15 +1,101 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title></title>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <!-- ==========================ESTILOS========================== -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/css/bootstrap.min.css" integrity="sha384-WskhaSGFgHYWDcbwN70/dfYBj47jz9qbsMId/iRN3ewGhXQFZCSftd1LZCfmhktB" crossorigin="anonymous">
     <link rel="stylesheet" href="style.css">
-</head>
-<body>
-    <div class="container">
-        <h1>Hello World!</h1>
-        <button id="btn">Click me</button>
+    <title>New York City Description</title>
+  </head>
+
+  <body>
+    <!-- ==========================CONTENIDO========================== -->
+    <div class="container-fluid">
+      <div class="row">
+        <div class="col-12 titulo">
+          <H1>New York City Description</H1>
+        </div>
+
+        <div class="col-sm-12 col-md-12 col-lg-3 visualControl">
+          <h1 style="text-align: center; color: #007bff">Visual Control</h1>
+          <div class="card card-body">
+            <h4 style="text-align: center;">Boroughs</h4>
+            <form style="padding-left: 15px;">
+              <select class="form-control" id="selectDistricts"  style="margin-left: -15px;">
+                <option>Select Boroughs</option>
+                <option>Bronx</option>
+                <option>Brooklyn</option>
+                <option>Manhattan</option>
+                <option>Queens</option>
+                <option>Staten Island</option>
+              </select>
+            </form>
+            <hr />
+            <h4 style="text-align: center;">Markers</h4>
+            <form style="padding-left: 15px;">
+              <div class="row">
+                <div class="col-md-6 form-group form-check">
+                  <input type="checkbox" class="form-check-input" id="BoroughsMarkers" checked>
+                  <label class="form-check-label" for="BoroughsMarkers">Boroughs Markers</label>
+                </div>
+                <div class="col-md-6 form-group form-check">
+                  <input type="checkbox" class="form-check-input" id="DistrictsMarkers">
+                  <label class="form-check-label" for="DistrictsMarkers">Districts Markers</label>
+                </div>
+                <div class="col-md-6 form-group form-check">
+                  <input type="checkbox" class="form-check-input" id="NeighborhoodsMarkers">
+                  <label class="form-check-label" for="NeighborhoodsMarkers">Neighborhoods Markers</label>
+                </div>
+                <div class="col-md-6 form-group form-check">
+                  <input type="checkbox" class="form-check-input" id="HousingMarkers">
+                  <label class="form-check-label" for="HousingMarkers">Housing Markers</label>
+                </div>
+              </div>
+            </form>
+            <hr />
+            <button class="btn btn-primary btn-block" type="submit" id="Draw">
+              Draw
+            </button>
+            <button class="btn btn-secondary btn-block" type="submit" id="Clear">
+              Clear
+            </button>
+          </div>
+          <div id="outBest1"></div>
+        </div>
+
+        <div class="col-sm-12 col-md-12 col-lg-6" style="padding: 0">
+          <div class="card">
+            <div id="map"></div>
+          </div>
+        </div>
+
+        <div class="col-sm-12 col-md-12 col-lg-3 visualControl">
+          <h1 style="text-align: center; color: #007bff">Description</h1>
+          <button class="btn btn-primary btn-block" type="submit" id="Estadisticas">
+            Cargar Estadisticas
+          </button>
+          <div class="card card-body">
+            <button class="btn btn-secondary btn-block" type="submit" id="Safety">
+              Safety
+            </button>
+            <button class="btn btn-secondary btn-block" type="submit" id="Distance">
+              Distance
+            </button>
+            <button class="btn btn-secondary btn-block" type="submit" id="Affordability">
+              Affordability
+            </button>
+          </div>
+          <div id="outBest2"></div>
+        </div>
+
+      </div>
     </div>
+    <!-- ==========================SCRIPT========================== -->
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/js/bootstrap.min.js" integrity="sha384-smHYKdLADwkXOn1EmN1qk/HfnUcbVRZyYmZ4qpPea6sjB/pTJ0euyQp0Mk8ck+5T" crossorigin="anonymous"></script>
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDv7dN0dT4TR0e8in4TH-0sRUaRfA6FxVY&callback=initMap"></script>
+    <script src="https://d3js.org/d3.v5.min.js"></script>
     <script src="index.js"></script>
-</body>
+  </body>
 </html>
