@@ -4,6 +4,8 @@ const NY_districts_shapes = "https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgi
 const NY_neighborhood_names = "https://data.cityofnewyork.us/api/views/xyye-rtrs/rows.json?accessType=DOWNLOAD";
 const NY_housing = "https://data.cityofnewyork.us/api/views/hg8x-zxpr/rows.json?accessType=DOWNLOAD";
 const NY_crimes = "https://data.cityofnewyork.us/resource/9s4h-37hy.json";
+const NY_museums = "https://data.cityofnewyork.us/api/views/fn6f-htvy/rows.json?accessType=DOWNLOAD";
+const NY_art_galleries = "https://data.cityofnewyork.us/api/views/43hw-uvdj/rows.json?accessType=DOWNLOAD";
 
 
 var map;
@@ -31,21 +33,32 @@ var housingFull=[];
 var crimesFull=[];
 var crimesBoroughs=[];
 var crimesDistricts=[];
-var total=[];
+var museos=[];
+var galleries=[];
 var coord;
 var longitud, latitud;
 var drawDistri;
 
 var safetyTable=[];
+var safetyFull=[];
 var distan=[];
 var distanceTable=[];
+var affordabilityOrigen=[];
 var affordabilityTable=[];
+var affordabilityFull=[];
+var topOrigen=[];
+var topBoroughs=[];
+var topFull=[];
 
 var directionsService;
 var directionsRenderer;
 var listo = false;
 
 function initMap() {
+  map = new google.maps.Map(document.getElementById('map'), {
+    zoom: 11,
+    center: NYUSternSchoolofBusiness
+  });
   newMap();
   directionsService = new google.maps.DirectionsService();
   directionsRenderer = new google.maps.DirectionsRenderer();
@@ -53,6 +66,8 @@ function initMap() {
   getDataHousing();
   getDataCrimes();
   getDataNeighborhood();
+  getDataMuseums();
+  getDataGalleries();
 }
 
 //==============================================================================
@@ -81,9 +96,7 @@ function getDataNeighborhood(){
 function getDataHousing(){
   var data, dataRow;
   data = $.get(NY_housing, function(){}).done(function(){
-    //console.log(data);
     dataRow = data.responseJSON.data;
-    //console.log(dataRow);
     housingProcessor(dataRow);
   })
   .fail(function(error){console.log(error);})
@@ -93,6 +106,24 @@ function getDataCrimes() {
   $.ajax({url:NY_crimes, type:"GET", data:{cmplnt_to_dt:"2015-12-31T00:00:00.000"}
   }).done(function(data) {
     crimesProcessor(data);
+  })
+  .fail(function(error){console.log(error);})
+}
+
+function getDataMuseums(){
+  var data, dataRow;
+  data = $.get(NY_museums, function(){}).done(function(){
+    dataRow = data.responseJSON.data;
+    museumsProcessor(dataRow);
+  })
+  .fail(function(error){console.log(error);})
+}
+
+function getDataGalleries(){
+  var data, dataRow;
+  data = $.get(NY_art_galleries, function(){}).done(function(){
+    dataRow = data.responseJSON.data;
+    galleriesProcessor(dataRow);
   })
   .fail(function(error){console.log(error);})
 }
@@ -190,9 +221,7 @@ function housingProcessor(dataRow){
     housing=[];
     latitud = parseFloat(dataRow[i][23]);
     longitud = parseFloat(dataRow[i][24]);
-    latitud2 = parseFloat(dataRow[i][25]);
-    longitud2 = parseFloat(dataRow[i][26]);
-    housing.push(dataRow[i][15], {lat:latitud, lng:longitud}, dataRow[i][31], dataRow[i][12], {lat:latitud2, lng:longitud2});
+    housing.push(dataRow[i][15], {lat:latitud, lng:longitud}, dataRow[i][31], dataRow[i][12]);
     if(dataRow[i][15] == "Bronx"){housingBX.push(housing);}
     if(dataRow[i][15] == "Brooklyn"){housingBK.push(housing);}
     if(dataRow[i][15] == "Manhattan"){housingMG.push(housing);}
@@ -200,7 +229,6 @@ function housingProcessor(dataRow){
     if(dataRow[i][15] == "Staten Island"){housingSI.push(housing);}
   }
   housingFull.push(housingMG, housingBX, housingBK, housingQE, housingSI);
-
 }
 
 //==============================================================================
@@ -216,6 +244,30 @@ function crimesProcessor(data){
     if(data[i].boro_nm == "STATEN ISLAND"){crimesSI.push(crimes);}
   }
   crimesFull.push(crimesMG, crimesBX, crimesBK, crimesQE, crimesSI);
+}
+
+//==============================================================================
+
+function museumsProcessor(data){
+  for (var i = 0; i < data.length; i++) {
+    data[i][8] = data[i][8].slice(7, data[i][8].length-1);
+    data[i][8] = data[i][8].split(" ");
+    data[i][8][0] = parseFloat(data[i][8][0]);
+    data[i][8][1] = parseFloat(data[i][8][1]);
+    museos.push([data[i][8],data[i][9],data[i][10]]);
+  }
+}
+
+//==============================================================================
+
+function galleriesProcessor(data){
+  for (var i = 0; i < data.length; i++) {
+    data[i][9] = data[i][9].slice(7, data[i][8].length-1);
+    data[i][9] = data[i][9].split(" ");
+    data[i][9][0] = parseFloat(data[i][9][0]);
+    data[i][9][1] = parseFloat(data[i][9][1]);
+    galleries.push([data[i][9],data[i][10],data[i][12]]);
+  }
 }
 
 //==============================================================================
@@ -249,6 +301,12 @@ function drawMap(){
   }
   if (document.getElementById('HousingMarkers').checked) {
     drawHousingMarkers(drawDistri);
+  }
+  if (document.getElementById('MuseumsMarkers').checked) {
+    drawMarkersMuseums();
+  }
+  if (document.getElementById('GalleriesMarkers').checked) {
+    drawMarkersGalleries();
   }
 }
 
@@ -339,14 +397,12 @@ function drawPolygon(color,polygon){
 }
 
 function drawNYUMarker(){  //DRAW MARKERS
-  var destinationIcon = 'https://chart.googleapis.com/chart?' +
-            'chst=d_map_pin_letter&chld=O|FFFF00|000000';;
   NYUSternSchoolofBusinessMarker = new google.maps.Marker({
     animation: google.maps.Animation.DROP,
     position: NYUSternSchoolofBusiness,
     label: "NYU Stern School of Business",
     map: map,
-    icon: destinationIcon
+    icon: "http://individual.icons-land.com/IconsPreview/MapMarkers/PNG/Centered/32x32/MapMarker_Marker_Outside_Yellow.png"
   });
 }
 
@@ -354,31 +410,41 @@ function drawMarkers(){  //DRAW MARKERS
     BronxDistMarker = new google.maps.Marker({
       animation: google.maps.Animation.DROP,
       position: BronxDist,
+      title: "Bronx",
       label: "Bronx",
+      icon: "http://individual.icons-land.com/IconsPreview/MapMarkers/PNG/Centered/32x32/MapMarker_Marker_Outside_Red.png",
       map: map
     });
     BrooklynDistMarker = new google.maps.Marker({
       animation: google.maps.Animation.DROP,
       position: BrooklynDist,
+      title: "Brooklyn",
       label: "Brooklyn",
+      icon: "http://individual.icons-land.com/IconsPreview/MapMarkers/PNG/Centered/32x32/MapMarker_Marker_Outside_Red.png",
       map: map
     });
     ManhattanDistMarker = new google.maps.Marker({
       animation: google.maps.Animation.DROP,
       position: ManhattanDist,
+      title: "Manhattan",
       label: "Manhattan",
+      icon: "http://individual.icons-land.com/IconsPreview/MapMarkers/PNG/Centered/32x32/MapMarker_Marker_Outside_Red.png",
       map: map
     });
     QueensDistMarker = new google.maps.Marker({
       animation: google.maps.Animation.DROP,
       position: QueensDist,
+      title: "Queens",
       label: "Queens",
+      icon: "http://individual.icons-land.com/IconsPreview/MapMarkers/PNG/Centered/32x32/MapMarker_Marker_Outside_Red.png",
       map: map
     });
     StatenIslandDistMarker = new google.maps.Marker({
       animation: google.maps.Animation.DROP,
       position: StatenIslandDist,
+      title: "Staten Island",
       label: "Staten Island",
+      icon: "http://individual.icons-land.com/IconsPreview/MapMarkers/PNG/Centered/32x32/MapMarker_Marker_Outside_Red.png",
       map: map
     });
 }
@@ -390,49 +456,60 @@ function drawMarkersBoroDC(drawDistri){  //DRAW MARKERS
       Marker = new google.maps.Marker({
         animation: google.maps.Animation.DROP,
         position: statesDistricts[1][i][2],
+        title: statesDistricts[1][i][1],
         label: statesDistricts[1][i][1],
+        icon: "http://individual.icons-land.com/IconsPreview/MapMarkers/PNG/Centered/32x32/MapMarker_Marker_Outside_Violet.png",
         map: map
       });
     }
-  }
-  if(drawDistri == 'Brooklyn'){
+  }else if(drawDistri == 'Brooklyn'){
     for (var i = 0; i < statesDistricts[2].length; i++) {
       Marker = new google.maps.Marker({
         animation: google.maps.Animation.DROP,
         position: statesDistricts[2][i][2],
+        title: statesDistricts[2][i][1],
         label: statesDistricts[2][i][1],
+        icon: "http://individual.icons-land.com/IconsPreview/MapMarkers/PNG/Centered/32x32/MapMarker_Marker_Outside_Violet.png",
         map: map
       });
     }
-  }
-  if(drawDistri == 'Manhattan'){
+  }else if(drawDistri == 'Manhattan'){
     for (var i = 0; i < statesDistricts[0].length; i++) {
       Marker = new google.maps.Marker({
         animation: google.maps.Animation.DROP,
         position: statesDistricts[0][i][2],
+        title: statesDistricts[0][i][1],
         label: statesDistricts[0][i][1],
+        icon: "http://individual.icons-land.com/IconsPreview/MapMarkers/PNG/Centered/32x32/MapMarker_Marker_Outside_Violet.png",
         map: map
       });
     }
-  }
-  if(drawDistri == 'Queens'){
+  }else if(drawDistri == 'Queens'){
     for (var i = 0; i < statesDistricts[3].length; i++) {
       Marker = new google.maps.Marker({
         animation: google.maps.Animation.DROP,
         position: statesDistricts[3][i][2],
+        title: statesDistricts[3][i][1],
         label: statesDistricts[3][i][1],
+        icon: "http://individual.icons-land.com/IconsPreview/MapMarkers/PNG/Centered/32x32/MapMarker_Marker_Outside_Violet.png",
         map: map
       });
     }
-  }
-  if(drawDistri == 'Staten Island'){
+  }else if(drawDistri == 'Staten Island'){
     for (var i = 0; i < statesDistricts[4].length; i++) {
       Marker = new google.maps.Marker({
         animation: google.maps.Animation.DROP,
         position: statesDistricts[4][i][2],
+        title: statesDistricts[4][i][1],
         label: statesDistricts[4][i][1],
+        icon: "http://individual.icons-land.com/IconsPreview/MapMarkers/PNG/Centered/32x32/MapMarker_Marker_Outside_Violet.png",
         map: map
       });
+    }
+  }else {
+    var aja = ['Bronx','Brooklyn','Manhattan','Queens','Staten Island'];
+    for (var i = 0; i < aja.length; i++) {
+      drawMarkersBoroDC(aja[i]);
     }
   }
 }
@@ -444,49 +521,55 @@ function drawNeighborhoodMarkers(drawDistri){  //DRAW MARKERS
       Marker = new google.maps.Marker({
         animation: google.maps.Animation.DROP,
         position: NeighborhoodsFull[0][i][2],
-        label: NeighborhoodsFull[0][i][1],
+        title: NeighborhoodsFull[0][i][1],
+        icon: "http://individual.icons-land.com/IconsPreview/MapMarkers/PNG/Centered/32x32/MapMarker_Marker_Outside_Chartreuse.png",
         map: map
       });
     }
-  }
-  if(drawDistri == 'Brooklyn'){
+  }else if(drawDistri == 'Brooklyn'){
     for (var i = 0; i < NeighborhoodsFull[1].length; i++) {
       Marker = new google.maps.Marker({
         animation: google.maps.Animation.DROP,
         position: NeighborhoodsFull[1][i][2],
-        label: NeighborhoodsFull[1][i][1],
+        title: NeighborhoodsFull[1][i][1],
+        icon: "http://individual.icons-land.com/IconsPreview/MapMarkers/PNG/Centered/32x32/MapMarker_Marker_Outside_Chartreuse.png",
         map: map
       });
     }
-  }
-  if(drawDistri == 'Manhattan'){
+  }else if(drawDistri == 'Manhattan'){
     for (var i = 0; i < NeighborhoodsFull[2].length; i++) {
       Marker = new google.maps.Marker({
         animation: google.maps.Animation.DROP,
         position: NeighborhoodsFull[2][i][2],
-        label: NeighborhoodsFull[2][i][1],
+        title: NeighborhoodsFull[2][i][1],
+        icon: "http://individual.icons-land.com/IconsPreview/MapMarkers/PNG/Centered/32x32/MapMarker_Marker_Outside_Chartreuse.png",
         map: map
       });
     }
-  }
-  if(drawDistri == 'Queens'){
+  }else if(drawDistri == 'Queens'){
     for (var i = 0; i < NeighborhoodsFull[3].length; i++) {
       Marker = new google.maps.Marker({
         animation: google.maps.Animation.DROP,
         position: NeighborhoodsFull[3][i][2],
-        label: NeighborhoodsFull[3][i][1],
+        title: NeighborhoodsFull[3][i][1],
+        icon: "http://individual.icons-land.com/IconsPreview/MapMarkers/PNG/Centered/32x32/MapMarker_Marker_Outside_Chartreuse.png",
         map: map
       });
     }
-  }
-  if(drawDistri == 'Staten Island'){
+  }else if(drawDistri == 'Staten Island'){
     for (var i = 0; i < NeighborhoodsFull[4].length; i++) {
       Marker = new google.maps.Marker({
         animation: google.maps.Animation.DROP,
         position: NeighborhoodsFull[4][i][2],
-        label: NeighborhoodsFull[4][i][1],
+        title: NeighborhoodsFull[4][i][1],
+        icon: "http://individual.icons-land.com/IconsPreview/MapMarkers/PNG/Centered/32x32/MapMarker_Marker_Outside_Chartreuse.png",
         map: map
       });
+    }
+  }else{
+    var aja = ['Bronx','Brooklyn','Manhattan','Queens','Staten Island'];
+    for (var i = 0; i < aja.length; i++) {
+      drawNeighborhoodMarkers(aja[i]);
     }
   }
 }
@@ -498,50 +581,82 @@ function drawHousingMarkers(drawDistri){  //DRAW MARKERS
       Marker = new google.maps.Marker({
         animation: google.maps.Animation.DROP,
         position: housingFull[0][i][1],
-        label: housingFull[0][i][3],
+        title: housingFull[0][i][3],
+        icon: "http://individual.icons-land.com/IconsPreview/MapMarkers/PNG/Centered/32x32/MapMarker_Marker_Outside_Blue.png",
         map: map
       });
     }
-  }
-  if(drawDistri == 'Bronx'){
+  }else if(drawDistri == 'Bronx'){
     for (var i = 0; i < housingFull[1].length; i++) {
       Marker = new google.maps.Marker({
         animation: google.maps.Animation.DROP,
         position: housingFull[1][i][1],
-        label: housingFull[1][i][3],
+        title: housingFull[1][i][3],
+        icon: "http://individual.icons-land.com/IconsPreview/MapMarkers/PNG/Centered/32x32/MapMarker_Marker_Outside_Blue.png",
         map: map
       });
     }
-  }
-  if(drawDistri == 'Brooklyn'){
+  }else if(drawDistri == 'Brooklyn'){
     for (var i = 0; i < housingFull[2].length; i++) {
       Marker = new google.maps.Marker({
         animation: google.maps.Animation.DROP,
         position: housingFull[2][i][1],
-        label: housingFull[2][i][3],
+        title: housingFull[2][i][3],
+        icon: "http://individual.icons-land.com/IconsPreview/MapMarkers/PNG/Centered/32x32/MapMarker_Marker_Outside_Blue.png",
         map: map
       });
     }
-  }
-  if(drawDistri == 'Queens'){
+  }else if(drawDistri == 'Queens'){
     for (var i = 0; i < housingFull[3].length; i++) {
       Marker = new google.maps.Marker({
         animation: google.maps.Animation.DROP,
         position: housingFull[3][i][1],
-        label: housingFull[3][i][3],
+        title: housingFull[3][i][3],
+        icon: "http://individual.icons-land.com/IconsPreview/MapMarkers/PNG/Centered/32x32/MapMarker_Marker_Outside_Blue.png",
         map: map
       });
     }
-  }
-  if(drawDistri == 'Staten Island'){
+  }else if(drawDistri == 'Staten Island'){
     for (var i = 0; i < housingFull[4].length; i++) {
       Marker = new google.maps.Marker({
         animation: google.maps.Animation.DROP,
         position: housingFull[4][i][1],
-        label: housingFull[4][i][3],
+        title: housingFull[4][i][3],
+        icon: "http://individual.icons-land.com/IconsPreview/MapMarkers/PNG/Centered/32x32/MapMarker_Marker_Outside_Blue.png",
         map: map
       });
     }
+  }else{
+    var aja = ['Bronx','Brooklyn','Manhattan','Queens','Staten Island'];
+    for (var i = 0; i < aja.length; i++) {
+      drawHousingMarkers(aja[i]);
+    }
+  }
+}
+
+function drawMarkersMuseums(){  //DRAW MARKERS
+  var Marker;
+  for (var i = 0; i < museos.length; i++) {
+    Marker = new google.maps.Marker({
+      animation: google.maps.Animation.DROP,
+      position: {lat: museos[i][0][1] , lng: museos[i][0][0]} ,
+      title: museos[i][1] + " Tel:" + museos[i][2],
+      icon: "http://individual.icons-land.com/IconsPreview/MapMarkers/PNG/Centered/32x32/MapMarker_Marker_Outside_Grey.png",
+      map: map
+    });
+  }
+}
+
+function drawMarkersGalleries(){  //DRAW MARKERS
+  var Marker;
+  for (var i = 0; i < galleries.length; i++) {
+    Marker = new google.maps.Marker({
+      animation: google.maps.Animation.DROP,
+      position: {lat: galleries[i][0][1] , lng: galleries[i][0][0]} ,
+      title: galleries[i][1] + " Tel:" + galleries[i][2],
+      icon: "http://individual.icons-land.com/IconsPreview/MapMarkers/PNG/Centered/32x32/MapMarker_Marker_Outside_Azure.png",
+      map: map
+    });
   }
 }
 
@@ -554,6 +669,7 @@ function estadistics(){
   affordability();
   safety();
   distanceTableValor();
+  top3();
   document.getElementById("outBest2").innerHTML =
     "<br>"
     +"<h4 style=\"text-align: center; color: #007bff\">"
@@ -563,16 +679,15 @@ function estadistics(){
 
 function safety(){
   var distrito, result, coordenadas, Dmarker;
-  crimesBoroughs.push(["Manhattan", (crimesFull[0].length/housingFull[0].length).toPrecision(3)]);
-  crimesBoroughs.push(["Bronx", (crimesFull[1].length/housingFull[1].length).toPrecision(3)]);
-  crimesBoroughs.push(["Brooklyn", (crimesFull[2].length/housingFull[2].length).toPrecision(3)]);
-  crimesBoroughs.push(["Queens", (crimesFull[3].length/housingFull[3].length).toPrecision(3)]);
-  crimesBoroughs.push(["Staten Island", (crimesFull[4].length/housingFull[4].length).toPrecision(3)]);
-
+  crimesBoroughs.push(["Manhattan", (crimesFull[0].length/housingFull[0].length).toPrecision(3),crimesFull[0].length]);
+  crimesBoroughs.push(["Bronx", (crimesFull[1].length/housingFull[1].length).toPrecision(3),crimesFull[0].length]);
+  crimesBoroughs.push(["Brooklyn", (crimesFull[2].length/housingFull[2].length).toPrecision(3),crimesFull[0].length]);
+  crimesBoroughs.push(["Queens", (crimesFull[3].length/housingFull[3].length).toPrecision(3),crimesFull[0].length]);
+  crimesBoroughs.push(["Staten Island", (crimesFull[4].length/housingFull[4].length).toPrecision(3),crimesFull[0].length]);
   organiceSafaty(crimesBoroughs);
   //console.log(crimesBoroughs);
 
-//CRIMENES POR DISTRITO
+//CRIMENES POR DISTRITO====================
   for (var i = 0; i < crimesFull.length; i++) {
     crimesDistricts.push([]);
     for (var k = 0; k < statesDistricts[i].length; k++) {
@@ -597,17 +712,15 @@ function safety(){
       }
     }
   }
-
   for (var i = 0; i < crimesDistricts.length; i++) {
     organiceSafaty(crimesDistricts[i]);
   }
   for (var i = 0; i < crimesDistricts.length; i++) {
-    for (var j = 0; j < 3; j++) {
-      total.push(crimesDistricts[i][j]);
+    for (var j = 0; j < crimesDistricts[i].length; j++) {
+      safetyFull.push(crimesDistricts[i][j]);
     }
   }
-  organiceSafaty(total);
-  //console.log(total);
+  organiceSafaty(safetyFull);
 }
 
 function organiceSafaty(crimenes){
@@ -624,13 +737,35 @@ function organiceSafaty(crimenes){
 
 function bestSafety(){
   var va;
+  dataGraficsSafety();
   bestSafetyBoroughs();
   bestSafetyDistricts();
   for (var i = 0; i < 10; i++) {
-    va = parseInt(total[i][0][0]);
-    drawMarkerBest(va-1,total[i][0]);
+    va = parseInt(safetyFull[i][0][0]);
+    drawMarkerBest(va-1,safetyFull[i][0]);
   }
 }
+
+
+function dataGraficsSafety(){
+  var DatosSafety=[];
+  for (var i = 0; i < safetyFull.length; i++) {
+    DatosSafety.push(safetyFull[i][1]);
+  }
+  var x = d3.scaleLinear()
+    .domain([0, d3.max(DatosSafety)])
+    .range([0,800])
+
+  d3.select('#graphics')
+    .selectAll('div')
+    .data(DatosSafety)
+    .enter().append('div')
+    .attr('class', 'barra')
+    .style('height', function(d){
+      return x(d) + 'px';
+    })
+}
+
 
 function drawMarkerBest(va, level){
   var distrito, Dmarker;
@@ -638,16 +773,18 @@ function drawMarkerBest(va, level){
     if (statesDistricts[va][i][1]==level) {
       distrito = new google.maps.Polygon({
         paths: statesDistricts[va][i][0],
-        strokeColor: 'blue',
+        strokeColor: 'green',
         strokeOpacity: 0.8,
         strokeWeight: 2,
-        fillColor: 'blue',
+        fillColor: 'green',
         fillOpacity: 0.35
       });
       distrito.setMap(map);
       Dmarker = new google.maps.Marker({
         position: statesDistricts[va][i][2],
         label: level,
+        title: level,
+        icon: "http://individual.icons-land.com/IconsPreview/MapMarkers/PNG/Centered/32x32/MapMarker_Marker_Outside_Violet.png",
         map:map
       });
 
@@ -665,28 +802,34 @@ function bestSafetyBoroughs(){
   +"<thead>"
   +"<tr>"
   +"<th>Boroughs Name</th>"
-  +"<th>Number of Crimes / Number of Housing</th>"
+  +"<th>Number of Crimes</th>"
+  +"<th>Crimes / Housing</th>"
   +"</tr>"
   +"</thead>"
   +"<tbody>"
   +"<tr>"
   +"<td>"+crimesBoroughs[0][0]+"</td>"
+  +"<td>"+crimesBoroughs[0][2]+"</td>"
   +"<td>"+crimesBoroughs[0][1]+"</td>"
   +"</tr>"
   +"<tr>"
   +"<td>"+crimesBoroughs[1][0]+"</td>"
+  +"<td>"+crimesBoroughs[1][2]+"</td>"
   +"<td>"+crimesBoroughs[1][1]+"</td>"
   +"</tr>"
   +"<tr>"
-  +"<td>"+crimesBoroughs[2][0] +"</td>"
+  +"<td>"+crimesBoroughs[2][0]+"</td>"
+  +"<td>"+crimesBoroughs[2][2]+"</td>"
   +"<td>"+crimesBoroughs[2][1]+"</td>"
   +"</tr>"
   +"<tr>"
-  +"<td>"+crimesBoroughs[3][0] +"</td>"
+  +"<td>"+crimesBoroughs[3][0]+"</td>"
+  +"<td>"+crimesBoroughs[3][2]+"</td>"
   +"<td>"+crimesBoroughs[3][1]+"</td>"
   +"</tr>"
   +"<tr>"
-  +"<td>"+crimesBoroughs[4][0] +"</td>"
+  +"<td>"+crimesBoroughs[4][0]+"</td>"
+  +"<td>"+crimesBoroughs[4][2]+"</td>"
   +"<td>"+crimesBoroughs[4][1]+"</td>"
   +"</tr>"
   +"</tbody>"
@@ -703,50 +846,50 @@ function bestSafetyDistricts(){
   +"<table class=\"table table-bordered\">"
     +"<thead>"
       +"<tr>"
-        +"<th>BoroDC</th>"
+        +"<th>Boro DC</th>"
         +"<th>Number of Crimes</th>"
       +"</tr>"
     +"</thead>"
     +"<tbody>"
       +"<tr>"
-        +"<td>"+total[0][0]+"</td>"
-        +"<td>"+total[0][1]+" Crimes</td>"
+        +"<td>"+safetyFull[0][0]+"</td>"
+        +"<td>"+safetyFull[0][1]+" Crimes</td>"
       +"</tr>"
       +"<tr>"
-        +"<td>"+total[1][0]+"</td>"
-        +"<td>"+total[1][1]+" Crimes</td>"
+        +"<td>"+safetyFull[1][0]+"</td>"
+        +"<td>"+safetyFull[1][1]+" Crimes</td>"
       +"</tr>"
       +"<tr>"
-        +"<td>"+total[2][0]+"</td>"
-        +"<td>"+total[2][1]+" Crimes</td>"
+        +"<td>"+safetyFull[2][0]+"</td>"
+        +"<td>"+safetyFull[2][1]+" Crimes</td>"
       +"</tr>"
       +"<tr>"
-        +"<td>"+total[3][0]+"</td>"
-        +"<td>"+total[3][1]+" Crimes</td>"
+        +"<td>"+safetyFull[3][0]+"</td>"
+        +"<td>"+safetyFull[3][1]+" Crimes</td>"
       +"</tr>"
       +"<tr>"
-        +"<td>"+total[4][0]+"</td>"
-        +"<td>"+total[4][1]+" Crimes</td>"
+        +"<td>"+safetyFull[4][0]+"</td>"
+        +"<td>"+safetyFull[4][1]+" Crimes</td>"
       +"</tr>"
       +"<tr>"
-        +"<td>"+total[5][0]+"</td>"
-        +"<td>"+total[5][1]+" Crimes</td>"
+        +"<td>"+safetyFull[5][0]+"</td>"
+        +"<td>"+safetyFull[5][1]+" Crimes</td>"
       +"</tr>"
       +"<tr>"
-        +"<td>"+total[6][0]+"</td>"
-        +"<td>"+total[6][1]+" Crimes</td>"
+        +"<td>"+safetyFull[6][0]+"</td>"
+        +"<td>"+safetyFull[6][1]+" Crimes</td>"
       +"</tr>"
       +"<tr>"
-        +"<td>"+total[7][0]+"</td>"
-        +"<td>"+total[7][1]+" Crimes</td>"
+        +"<td>"+safetyFull[7][0]+"</td>"
+        +"<td>"+safetyFull[7][1]+" Crimes</td>"
       +"</tr>"
       +"<tr>"
-        +"<td>"+total[8][0]+"</td>"
-        +"<td>"+total[8][1]+" Crimes</td>"
+        +"<td>"+safetyFull[8][0]+"</td>"
+        +"<td>"+safetyFull[8][1]+" Crimes</td>"
       +"</tr>"
       +"<tr>"
-        +"<td>"+total[9][0]+"</td>"
-        +"<td>"+total[9][1]+" Crimes</td>"
+        +"<td>"+safetyFull[9][0]+"</td>"
+        +"<td>"+safetyFull[9][1]+" Crimes</td>"
       +"</tr>"
     +"</tbody>"
   +"</table>";
@@ -809,6 +952,7 @@ function organiceDistance(){
 
 function bestDistance(){
   clearMap();
+  dataGraficsDistance();
   prepareRout();
   document.getElementById("outBest1").innerHTML ="";
   document.getElementById("outBest2").innerHTML =
@@ -868,6 +1012,25 @@ function bestDistance(){
   +"</table>";
 }
 
+function dataGraficsDistance(){
+  var DatosDistance=[];
+  for (var i = 0; i < distanceTable.length; i++) {
+    DatosDistance.push(distanceTable[i][1]);
+  }
+  var x = d3.scaleLinear()
+    .domain([0, d3.max(DatosDistance)])
+    .range([0,800])
+
+  d3.select('#graphics')
+    .selectAll('div')
+    .data(DatosDistance)
+    .enter().append('div')
+    .attr('class', 'barra')
+    .style('height', function(d){
+      return x(d) + 'px';
+    })
+}
+
 function prepareRout(){
   var va;
   for (var i = 0; i < 10; i++) {
@@ -882,55 +1045,387 @@ function getMarker(va, level){
     if (statesDistricts[va][i][1]==level) {
       distrito = new google.maps.Polygon({
         paths: statesDistricts[va][i][0],
-        strokeColor: 'blue',
+        strokeColor: 'green',
         strokeOpacity: 0.8,
         strokeWeight: 2,
-        fillColor: 'blue',
+        fillColor: 'green',
         fillOpacity: 0.35
       });
       distrito.setMap(map);
       Dmarker = new google.maps.Marker({
         position: statesDistricts[va][i][2],
         label: level,
+        title: level,
+        icon: "http://individual.icons-land.com/IconsPreview/MapMarkers/PNG/Centered/32x32/MapMarker_Marker_Outside_Violet.png",
         map:map
       });
-      getRoute(Dmarker);
     }
   }
 }
 
-function getRoute(marker){
-  var originPoint = NYUSternSchoolofBusinessMarker.position;
-  var request ={
-    origin: originPoint,
-    destination: marker.position,
-    travelMode: 'DRIVING'
-  };
-  directionsRenderer.setMap(map);
-  directionsService.route(request,function(result,status){
-    if (status == 'OK') {
-      directionsRenderer.setDirections(result);
-    }
-  })
-}
+//==============================================================================
 
 function affordability(){
+  var distrito, result, coordenadas, Dmarker;
+  for (var i = 0; i < statesDistricts.length; i++) {
+    affordabilityTable.push([]);
+    for (var j = 0; j < statesDistricts[i].length; j++) {
+      affordabilityTable[i].push([statesDistricts[i][j][1], 0]);
+      for (var k = 0; k < housingFull[i].length; k++) {
+        if (housingFull[i][k][2] !== "0") {
+          distrito = new google.maps.Polygon({paths: statesDistricts[i][j][0]});
+          Dmarker = new google.maps.Marker({
+            position: {lat:housingFull[i][k][1].lat, lng: housingFull[i][k][1].lng}
+          });
+          coordenadas = Dmarker.position;
+          result = google.maps.geometry.poly.containsLocation(coordenadas, distrito);
+          if (result) {
+            affordabilityTable[i][j][1] += parseInt(housingFull[i][k][2]);
+            affordabilityOrigen=affordabilityTable;
+          }
+        }
+      }
+    }
+  }
+  for (var i = 0; i < affordabilityTable.length; i++) {
+    organiceAffordability(affordabilityTable[i]);
+  }
+  for (var i = 0; i < affordabilityTable.length; i++) {
+    for (var j = 0; j < affordabilityTable[i].length; j++) {
+      affordabilityFull.push(affordabilityTable[i][j]);
+    }
+  }
+  organiceAffordability(affordabilityFull);
+}
 
+function organiceAffordability(afford){
+  var cambio;
+  for (var i = 0; i < afford.length-1; i++) {
+    if((afford[i][1] < afford[i+1][1])){
+      cambio = afford[i];
+      afford[i]=afford[i+1];
+      afford[i+1]=cambio;
+      organiceAffordability(afford);
+    }
+  }
 }
 
 function bestAffordability(){
+  var va;
+  bestAffordabilityDistrics();
+  dataGraficsAffordability();
   clearMap();
+  for (var i = 0; i < 10; i++) {
+    va = parseInt(affordabilityFull[i][0][0]);
+    drawMarkerBestAffordability(va-1,affordabilityFull[i][0]);
+  }
+}
+
+function dataGraficsAffordability(){
+  var DatosAffordability=[];
+  for (var i = 0; i < affordabilityFull.length; i++) {
+    DatosAffordability.push(affordabilityFull[i][1]);
+  }
+  var x = d3.scaleLinear()
+    .domain([0, d3.max(DatosAffordability)])
+    .range([0,800])
+
+  d3.select('#graphics')
+    .selectAll('div')
+    .data(DatosAffordability)
+    .enter().append('div')
+    .attr('class', 'barra')
+    .style('height', function(d){
+      return x(d) + 'px';
+    })
+}
+
+function drawMarkerBestAffordability(va, level){
+  var distrito, Dmarker;
+  for (var i = 0; i < statesDistricts[va].length; i++) {
+    if (statesDistricts[va][i][1]==level) {
+      distrito = new google.maps.Polygon({
+        paths: statesDistricts[va][i][0],
+        strokeColor: 'green',
+        strokeOpacity: 0.8,
+        strokeWeight: 2,
+        fillColor: 'green',
+        fillOpacity: 0.35
+      });
+      distrito.setMap(map);
+      Dmarker = new google.maps.Marker({
+        position: statesDistricts[va][i][2],
+        label: level,
+        title: level,
+        icon: "http://individual.icons-land.com/IconsPreview/MapMarkers/PNG/Centered/32x32/MapMarker_Marker_Outside_Violet.png",
+        map:map
+      });
+    }
+  }
+}
+
+function bestAffordabilityDistrics(){
   document.getElementById("outBest1").innerHTML ="";
   document.getElementById("outBest2").innerHTML =
   "<br>"
   +"<h4 style=\"text-align: center; color: #007bff\">"
     +"Top 10 Best Affordability"
   +"</h4>"
+  +"<table class=\"table table-bordered\">"
+    +"<thead>"
+      +"<tr>"
+        +"<th>Boro DC</th>"
+        +"<th>Housing Affordability</th>"
+      +"</tr>"
+    +"</thead>"
+    +"<tbody>"
+      +"<tr>"
+        +"<td>"+affordabilityFull[0][0]+"</td>"
+        +"<td>"+affordabilityFull[0][1]+" Housing</td>"
+      +"</tr>"
+      +"<tr>"
+        +"<td>"+affordabilityFull[1][0]+"</td>"
+        +"<td>"+affordabilityFull[1][1]+" Housing</td>"
+      +"</tr>"
+      +"<tr>"
+        +"<td>"+affordabilityFull[2][0]+"</td>"
+        +"<td>"+affordabilityFull[2][1]+" Housing</td>"
+      +"</tr>"
+      +"<tr>"
+        +"<td>"+affordabilityFull[3][0]+"</td>"
+        +"<td>"+affordabilityFull[3][1]+" Housing</td>"
+      +"</tr>"
+      +"<tr>"
+        +"<td>"+affordabilityFull[4][0]+"</td>"
+        +"<td>"+affordabilityFull[4][1]+" Housing</td>"
+      +"</tr>"
+      +"<tr>"
+        +"<td>"+affordabilityFull[5][0]+"</td>"
+        +"<td>"+affordabilityFull[5][1]+" Housing</td>"
+      +"</tr>"
+      +"<tr>"
+        +"<td>"+affordabilityFull[6][0]+"</td>"
+        +"<td>"+affordabilityFull[6][1]+" Housing</td>"
+      +"</tr>"
+      +"<tr>"
+        +"<td>"+affordabilityFull[7][0]+"</td>"
+        +"<td>"+affordabilityFull[7][1]+" Housing</td>"
+      +"</tr>"
+      +"<tr>"
+        +"<td>"+affordabilityFull[8][0]+"</td>"
+        +"<td>"+affordabilityFull[8][1]+" Housing</td>"
+      +"</tr>"
+      +"<tr>"
+        +"<td>"+affordabilityFull[9][0]+"</td>"
+        +"<td>"+affordabilityFull[9][1]+" Housing</td>"
+      +"</tr>"
+    +"</tbody>"
+  +"</table>";
 }
 
 //==============================================================================
-//==============================================================================
-//==============================================================================
+
+function top3(){
+  for (var i = 0; i < statesDistricts.length; i++) {
+    topOrigen.push([]);
+    for (var j = 0; j < statesDistricts[i].length; j++) {
+      topOrigen[i].push([statesDistricts[i][j][1], 0]);
+
+      for (var x = 0; x < safetyFull.length; x++) {
+        if(safetyFull[x][0] == statesDistricts[i][j][1]){
+          topOrigen[i][j][1] += x;
+        }
+      }
+      for (var y = 0; y < distanceTable.length; y++) {
+        if(distanceTable[y][0] == statesDistricts[i][j][1]){
+          topOrigen[i][j][1] += y;
+        }
+      }
+      for (var z = 0; z < affordabilityFull.length; z++) {
+        if(affordabilityFull[z][0] == statesDistricts[i][j][1]){
+          topOrigen[i][j][1] += z;
+        }
+      }
+    }
+  }
+  for (var i = 0; i < topOrigen.length; i++) {
+    organiceTop(topOrigen[i]);
+  }
+  for (var i = 0; i < topOrigen.length; i++) {
+    for (var j = 0; j < topOrigen[i].length; j++) {
+      topFull.push(topOrigen[i][j]);
+    }
+  }
+  organiceTop(topFull);
+  topBoroughs.push(["Manhattan",0],["Bronx",0],["Brooklyn",0],["Queens",0],["Staten Island",0]);
+  for (var i = 0; i < topFull.length; i++) {
+    if ("1" == parseInt(topFull[i][0][0])) {
+      topBoroughs[0][1]+=topFull[i][1];
+    }else if ("2" == parseInt(topFull[i][0][0])) {
+      topBoroughs[1][1]+=topFull[i][1];
+    }else if ("3" == parseInt(topFull[i][0][0])) {
+      topBoroughs[2][1]+=topFull[i][1];
+    }else if ("4" == parseInt(topFull[i][0][0])) {
+      topBoroughs[3][1]+=topFull[i][1];
+    }else if ("5" == parseInt(topFull[i][0][0])) {
+      topBoroughs[4][1]+=topFull[i][1];
+    }
+  }
+  for (var i = 0; i < topBoroughs.length; i++) {
+    topBoroughs[i][1]=(topBoroughs[i][1]/topOrigen[i].length);
+  }
+  organiceTop(topBoroughs);
+}
+
+function organiceTop(top){
+  var cambio;
+  for (var i = 0; i < top.length-1; i++) {
+    if(!(top[i][1] <= top[i+1][1])){
+      cambio = top[i];
+      top[i]=top[i+1];
+      top[i+1]=cambio;
+      organiceTop(top);
+    }
+  }
+}
+
+function bestTop(){
+  clearMap();
+  for (var i = 0; i < 3; i++) {
+    va = parseInt(topFull[i][0][0]);
+    drawMarkerBestTop(va-1,topFull[i][0]);
+  }
+  document.getElementById("outBest1").innerHTML =
+  "<br>"
+  +"<h4 style=\"text-align: center; color: #007bff\">"
+    +"Top Best Boroughs"
+  +"</h4>"
+  +"<table class=\"table table-bordered\">"
+    +"<thead>"
+      +"<tr>"
+        +"<th>#</th>"
+        +"<th>Name Boroughs</th>"
+      +"</tr>"
+    +"</thead>"
+    +"<tbody>"
+      +"<tr>"
+        +"<td>1</td>"
+        +"<td>"+topBoroughs[0][0]+"</td>"
+      +"</tr>"
+      +"<tr>"
+        +"<td>2</td>"
+        +"<td>"+topBoroughs[1][0]+"</td>"
+      +"</tr>"
+      +"<tr>"
+        +"<td>3</td>"
+        +"<td>"+topBoroughs[2][0]+"</td>"
+      +"</tr>"
+      +"<tr>"
+        +"<td>4</td>"
+        +"<td>"+topBoroughs[3][0]+"</td>"
+      +"</tr>"
+      +"<tr>"
+        +"<td>5</td>"
+        +"<td>"+topBoroughs[4][0]+"</td>"
+      +"</tr>"
+    +"</tbody>"
+  +"</table>";
+  document.getElementById("outBest2").innerHTML =
+  "<br>"
+  +"<h4 style=\"text-align: center; color: #007bff\">"
+    +"Top 10 Best Districts"
+  +"</h4>"
+  +"<table class=\"table table-bordered\">"
+    +"<thead>"
+      +"<tr>"
+        +"<th>#</th>"
+        +"<th>Boro DC</th>"
+        +"<th>Name Boroughs</th>"
+      +"</tr>"
+    +"</thead>"
+    +"<tbody>"
+      +"<tr class=\"table-success\">"
+        +"<td>1</td>"
+        +"<td>"+topFull[0][0]+"</td>"
+        +"<td>"+topBoroughs[(parseInt(topFull[0][0][0]))-1][0]+"</td>"
+      +"</tr>"
+      +"<tr class=\"table-success\">"
+        +"<td>2</td>"
+        +"<td>"+topFull[1][0]+"</td>"
+        +"<td>"+topBoroughs[(parseInt(topFull[1][0][0]))-1][0]+"</td>"
+      +"</tr>"
+      +"<tr class=\"table-success\">"
+        +"<td>3</td>"
+        +"<td>"+topFull[2][0]+"</td>"
+        +"<td>"+topBoroughs[(parseInt(topFull[2][0][0]))-1][0]+"</td>"
+      +"</tr>"
+      +"<tr>"
+        +"<td>4</td>"
+        +"<td>"+topFull[3][0]+"</td>"
+        +"<td>"+topBoroughs[(parseInt(topFull[3][0][0]))-1][0]+"</td>"
+      +"</tr>"
+      +"<tr>"
+        +"<td>5</td>"
+        +"<td>"+topFull[4][0]+"</td>"
+        +"<td>"+topBoroughs[(parseInt(topFull[4][0][0]))-1][0]+"</td>"
+      +"</tr>"
+      +"<tr>"
+        +"<td>6</td>"
+        +"<td>"+topFull[5][0]+"</td>"
+        +"<td>"+topBoroughs[(parseInt(topFull[5][0][0]))-1][0]+"</td>"
+      +"</tr>"
+      +"<tr>"
+        +"<td>7</td>"
+        +"<td>"+topFull[6][0]+"</td>"
+        +"<td>"+topBoroughs[(parseInt(topFull[6][0][0]))-1][0]+"</td>"
+      +"</tr>"
+      +"<tr>"
+        +"<td>8</td>"
+        +"<td>"+topFull[7][0]+"</td>"
+        +"<td>"+topBoroughs[(parseInt(topFull[7][0][0]))-1][0]+"</td>"
+      +"</tr>"
+      +"<tr>"
+        +"<td>9</td>"
+        +"<td>"+topFull[8][0]+"</td>"
+        +"<td>"+topBoroughs[(parseInt(topFull[8][0][0]))-1][0]+"</td>"
+      +"</tr>"
+      +"<tr>"
+        +"<td>10</td>"
+        +"<td>"+topFull[9][0]+"</td>"
+        +"<td>"+topBoroughs[(parseInt(topFull[9][0][0]))-1][0]+"</td>"
+      +"</tr>"
+    +"</tbody>"
+  +"</table>";
+}
+
+function drawMarkerBestTop(va, level){
+  var distrito, Dmarker;
+  for (var i = 0; i < statesDistricts[va].length; i++) {
+    if (statesDistricts[va][i][1]==level) {
+      distrito = new google.maps.Polygon({
+        paths: statesDistricts[va][i][0],
+        strokeColor: 'green',
+        strokeOpacity: 0.8,
+        strokeWeight: 2,
+        fillColor: 'green',
+        fillOpacity: 0.35
+      });
+      distrito.setMap(map);
+      Dmarker = new google.maps.Marker({
+        position: statesDistricts[va][i][2],
+        label: level,
+        title: level,
+        icon: "http://individual.icons-land.com/IconsPreview/MapMarkers/PNG/Centered/32x32/MapMarker_Marker_Outside_Violet.png",
+        map:map
+      });
+    }
+  }
+}
+
+
+function downloadTable(){
+    $("table").tableToCSV();
+}
 
 $(document).ready(function() {
   $("#Draw").on("click",drawMap)
@@ -939,4 +1434,6 @@ $(document).ready(function() {
   $("#Safety").on("click",bestSafety)
   $("#Distance").on("click",bestDistance)
   $("#Affordability").on("click",bestAffordability)
+  $("#Top3").on("click",bestTop)
+  $("#Download").on("click",downloadTable)
 });

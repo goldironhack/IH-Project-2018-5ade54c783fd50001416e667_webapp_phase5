@@ -10,3 +10,12 @@
 .visualControl{
   margin: 15px 0;
 }
+
+.barra{
+  width: 17px;
+  max-height: 800px;
+  margin-right: 2px;
+  background-color: #007bff;
+  display: inline-block;
+  color: white;
+}

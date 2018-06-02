@@ -3,6 +3,7 @@
   <head>
     <meta charset="utf-8">
     <!-- ==========================ESTILOS========================== -->
+    <link rel="icon" type="image/png" href="https://cdn0.iconfinder.com/data/icons/city-elements-9/128/City_New_York-512.png"/>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/css/bootstrap.min.css" integrity="sha384-WskhaSGFgHYWDcbwN70/dfYBj47jz9qbsMId/iRN3ewGhXQFZCSftd1LZCfmhktB" crossorigin="anonymous">
     <link rel="stylesheet" href="style.css">
     <title>New York City Description</title>
@@ -11,9 +12,9 @@
   <body>
     <!-- ==========================CONTENIDO========================== -->
     <div class="container-fluid">
-      <div class="row">
+      <div class="row" style="justify-content:center">
         <div class="col-12 titulo">
-          <H1>New York City Description</H1>
+          <H1><img style="width: 38px" src="https://cdn0.iconfinder.com/data/icons/city-elements-9/128/City_New_York-512.png"> New York City </H1>
         </div>
 
         <div class="col-sm-12 col-md-12 col-lg-3 visualControl">
@@ -22,7 +23,7 @@
             <h4 style="text-align: center;">Boroughs</h4>
             <form style="padding-left: 15px;">
               <select class="form-control" id="selectDistricts"  style="margin-left: -15px;">
-                <option>Select Boroughs</option>
+                <option>All Boroughs</option>
                 <option>Bronx</option>
                 <option>Brooklyn</option>
                 <option>Manhattan</option>
@@ -34,21 +35,39 @@
             <h4 style="text-align: center;">Markers</h4>
             <form style="padding-left: 15px;">
               <div class="row">
+                <div class="col-md-12 form-group form-check">
+                  <img src="http://individual.icons-land.com/IconsPreview/MapMarkers/PNG/Centered/16x16/MapMarker_Marker_Outside_Yellow.png">
+                  <label class="form-check-label">NYU Stern School of Business</label>
+                </div>
                 <div class="col-md-6 form-group form-check">
                   <input type="checkbox" class="form-check-input" id="BoroughsMarkers" checked>
-                  <label class="form-check-label" for="BoroughsMarkers">Boroughs Markers</label>
+                  <img src="http://individual.icons-land.com/IconsPreview/MapMarkers/PNG/Centered/16x16/MapMarker_Marker_Outside_Red.png">
+                  <label class="form-check-label" for="BoroughsMarkers">Boroughs</label>
                 </div>
                 <div class="col-md-6 form-group form-check">
                   <input type="checkbox" class="form-check-input" id="DistrictsMarkers">
-                  <label class="form-check-label" for="DistrictsMarkers">Districts Markers</label>
+                  <img src="http://individual.icons-land.com/IconsPreview/MapMarkers/PNG/Centered/16x16/MapMarker_Marker_Outside_Violet.png">
+                  <label class="form-check-label" for="DistrictsMarkers">Districts</label>
                 </div>
                 <div class="col-md-6 form-group form-check">
                   <input type="checkbox" class="form-check-input" id="NeighborhoodsMarkers">
-                  <label class="form-check-label" for="NeighborhoodsMarkers">Neighborhoods Markers</label>
+                  <img src="http://individual.icons-land.com/IconsPreview/MapMarkers/PNG/Centered/16x16/MapMarker_Marker_Outside_Chartreuse.png">
+                  <label class="form-check-label" for="NeighborhoodsMarkers">Neighborhoods</label>
                 </div>
                 <div class="col-md-6 form-group form-check">
                   <input type="checkbox" class="form-check-input" id="HousingMarkers">
-                  <label class="form-check-label" for="HousingMarkers">Housing Markers</label>
+                  <img src="http://individual.icons-land.com/IconsPreview/MapMarkers/PNG/Centered/16x16/MapMarker_Marker_Outside_Blue.png">
+                  <label class="form-check-label" for="HousingMarkers">Housing</label>
+                </div>
+                <div class="col-md-6 form-group form-check">
+                  <input type="checkbox" class="form-check-input" id="MuseumsMarkers">
+                  <img src="http://individual.icons-land.com/IconsPreview/MapMarkers/PNG/Centered/16x16/MapMarker_Marker_Outside_Grey.png">
+                  <label class="form-check-label" for="MuseumsMarkers">Museums</label>
+                </div>
+                <div class="col-md-6 form-group form-check">
+                  <input type="checkbox" class="form-check-input" id="GalleriesMarkers">
+                  <img src="http://individual.icons-land.com/IconsPreview/MapMarkers/PNG/Centered/16x16/MapMarker_Marker_Outside_Azure.png">
+                  <label class="form-check-label" for="GalleriesMarkers">Galleries</label>
                 </div>
               </div>
             </form>
@@ -84,18 +103,30 @@
             <button class="btn btn-secondary btn-block" type="submit" id="Affordability">
               Affordability
             </button>
+            <button class="btn btn-primary btn-block" type="submit" id="Top3">
+              Top Best Districts
+            </button>
           </div>
           <div id="outBest2"></div>
+          <button class="btn btn-secondary btn-block" data-export="Download"  type="submit" id="Download">
+              Download
+          </button>
         </div>
-
+        <div class="col-10 visualControl">
+          <div class="col-12 titulo">
+            <H1> Graphics </H1>
+          </div>
+          <div id="graphics"></div>
+        </div>
       </div>
     </div>
     <!-- ==========================SCRIPT========================== -->
     <script src="https://code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
+    <script src="https://www.jqueryscript.net/demo/jQuery-Plugin-To-Convert-HTML-Table-To-CSV-tabletoCSV/jquery.tabletoCSV.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/js/bootstrap.min.js" integrity="sha384-smHYKdLADwkXOn1EmN1qk/HfnUcbVRZyYmZ4qpPea6sjB/pTJ0euyQp0Mk8ck+5T" crossorigin="anonymous"></script>
-    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDv7dN0dT4TR0e8in4TH-0sRUaRfA6FxVY&callback=initMap"></script>
-    <script src="https://d3js.org/d3.v5.min.js"></script>
+    <script defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDv7dN0dT4TR0e8in4TH-0sRUaRfA6FxVY&callback=initMap"></script>
+    <script src="https://d3js.org/d3.v4.min.js"></script>
     <script src="index.js"></script>
   </body>
 </html>
